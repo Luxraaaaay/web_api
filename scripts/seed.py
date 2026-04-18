@@ -5,8 +5,22 @@ import os
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
+import sys
 
 from sqlmodel import Session, select
+
+# Ensure project root is on sys.path when script run directly
+ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+# Try to ensure stdout/stderr use UTF-8 to avoid encoding errors on Windows consoles
+try:
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+except Exception:
+    # Python <3.7 or streams not reconfigurable — ignore
+    pass
 
 from app.database import init_db, SessionLocal
 from app.models import User, Game, Review, Favorite
@@ -14,7 +28,7 @@ from app.routes.auth import get_password_hash
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
-DEFAULT_CSV = Path("app/steam_games.csv")
+DEFAULT_CSV = Path("data/steam_games.csv")
 
 
 def parse_args():
