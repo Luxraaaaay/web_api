@@ -105,10 +105,7 @@ curl -X POST "http://127.0.0.1:8000/games/" \
 - The repository intentionally does not include the database file or uploaded assets to keep the repo small and avoid exposing any test data.
 
 ## API Documentation PDF
-If you want to include a PDF copy of the API documentation for submission, convert `docs/API.md` to PDF with `pandoc`:
 
-```bash
-pandoc docs/API.md -o docs/API.pdf --from markdown
-```
+PDF: [docs/API.pdf](docs/API.pdf)
 
 ---
