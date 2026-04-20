@@ -8,6 +8,8 @@ from app.database import get_session
 from app.models import Review, Game, User
 from sqlmodel import SQLModel
 from app.deps import get_current_user
+from app.models import ReviewLike
+from fastapi import status
 
 router = APIRouter()
 
@@ -35,3 +37,32 @@ def create_review(game_id: int, payload: ReviewCreate, current_user: User = Depe
     session.commit()
     session.refresh(review)
     return review
+
+
+@router.post("/{review_id}/like", status_code=status.HTTP_201_CREATED)
+def like_review(review_id: int, current_user: User = Depends(get_current_user), session: Session = Depends(get_session)):
+    review = session.get(Review, review_id)
+    if not review:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Review not found")
+
+    existing = session.exec(select(ReviewLike).where((ReviewLike.user_id == current_user.id) & (ReviewLike.review_id == review_id))).first()
+    if existing:
+        return {"detail": "already liked"}
+
+    like = ReviewLike(user_id=current_user.id, review_id=review_id)
+    session.add(like)
+    session.commit()
+    session.refresh(like)
+    return {"id": like.id, "review_id": review_id}
+
+
+@router.delete("/{review_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_review(review_id: int, current_user: User = Depends(get_current_user), session: Session = Depends(get_session)):
+    review = session.get(Review, review_id)
+    if not review:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Review not found")
+    if review.user_id != current_user.id and current_user.role != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
+    session.delete(review)
+    session.commit()
+    return None

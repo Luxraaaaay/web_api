@@ -4,6 +4,7 @@ from fastapi.responses import Response
 
 from app.database import init_db
 from app.routes import auth, games, reviews, favorites, users
+from app.routes import search, recommendations
 
 app = FastAPI(title="Game Stats & Recommendation API")
 
@@ -26,6 +27,8 @@ app.include_router(games.router, prefix="/games", tags=["games"])
 app.include_router(reviews.router, prefix="/reviews", tags=["reviews"])
 app.include_router(favorites.router, prefix="/favorites", tags=["favorites"])
 app.include_router(users.router, prefix="/users", tags=["users"])
+app.include_router(search.router, prefix="/search", tags=["search"])
+app.include_router(recommendations.router, prefix="/recommendations", tags=["recommendations"])
 
 
 @app.get("/favicon.ico", include_in_schema=False)

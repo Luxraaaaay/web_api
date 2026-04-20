@@ -8,6 +8,11 @@ from sqlalchemy import or_, func, desc as sa_desc
 from app.database import get_session
 from app.models import Game, Review
 from sqlmodel import SQLModel, Field
+from fastapi import UploadFile, File
+from app.models import GameAsset, User
+from app.deps import get_current_user
+from pathlib import Path
+import shutil
 
 router = APIRouter()
 
@@ -115,6 +120,66 @@ def get_game(game_id: int, session: Session = Depends(get_session)):
     if not game:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Game not found")
     return game
+
+
+@router.get("/{game_id}/reviews", response_model=List[Review])
+def list_game_reviews(game_id: int, skip: int = 0, limit: int = 50, session: Session = Depends(get_session)):
+    statement = select(Review).where(Review.game_id == game_id).offset(skip).limit(limit)
+    results = session.exec(statement).all()
+    return results
+
+
+@router.post("/{game_id}/assets", status_code=status.HTTP_201_CREATED)
+def upload_game_assets(
+    game_id: int,
+    files: list[UploadFile] = File(...),
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+):
+    game = session.get(Game, game_id)
+    if not game:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Game not found")
+
+    # simple permission: allow developer or admin
+    if current_user.role != "admin" and game.developer_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
+
+    out_dir = Path("data") / "assets" / str(game_id)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    assets = []
+    for f in files:
+        dest = out_dir / f.filename
+        with dest.open("wb") as fd:
+            shutil.copyfileobj(f.file, fd)
+        asset = GameAsset(game_id=game_id, filename=f.filename, url=str(dest.as_posix()))
+        session.add(asset)
+        assets.append(asset)
+
+    session.commit()
+    for a in assets:
+        session.refresh(a)
+
+    return assets
+
+
+@router.get("/publishers/{publisher_id}/games", response_model=list[Game])
+def list_publisher_games(publisher_id: int, session: Session = Depends(get_session)):
+    # return games where developer_id == publisher_id or where publishers JSON includes the publisher id/name
+    stmt = select(Game)
+    results = session.exec(stmt).all()
+    filtered = []
+    for g in results:
+        if g.developer_id == publisher_id:
+            filtered.append(g)
+            continue
+        pubs = g.publishers or []
+        try:
+            if any(str(publisher_id) == str(x) for x in pubs):
+                filtered.append(g)
+        except Exception:
+            pass
+
+    return filtered
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=Game)

@@ -36,6 +36,7 @@ class Game(SQLModel, table=True):
     developer: Optional[User] = Relationship(back_populates="games")
     reviews: List["Review"] = Relationship(back_populates="game")
     favorites: List["Favorite"] = Relationship(back_populates="game")
+    assets: List["GameAsset"] = Relationship(back_populates="game")
 
 class Review(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -47,6 +48,24 @@ class Review(SQLModel, table=True):
 
     user: Optional[User] = Relationship(back_populates="reviews")
     game: Optional[Game] = Relationship(back_populates="reviews")
+
+
+class ReviewLike(SQLModel, table=True):
+    __table_args__ = (UniqueConstraint("user_id", "review_id", name="uix_user_review_like"),)
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id", index=True)
+    review_id: int = Field(foreign_key="review.id", index=True)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+
+class GameAsset(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    game_id: int = Field(foreign_key="game.id", index=True)
+    filename: str
+    url: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    game: Optional[Game] = Relationship(back_populates="assets")
 
 class Favorite(SQLModel, table=True):
     __table_args__ = (UniqueConstraint("user_id", "game_id", name="uix_user_game"),)
