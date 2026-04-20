@@ -1,7 +1,7 @@
 from typing import List, Optional
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlmodel import Session, select
 from sqlalchemy import or_, func, desc as sa_desc
 
@@ -41,8 +41,8 @@ class GameUpdate(SQLModel):
 
 @router.get("/", response_model=List[Game])
 def list_games(
-    skip: int = 0,
-    limit: int = 20,
+    skip: int = Query(0, description="Offset for pagination"),
+    limit: int = Query(20, description="Maximum items to return"),
     q: Optional[str] = None,
     genre: Optional[str] = None,
     platform: Optional[str] = None,
@@ -123,7 +123,7 @@ def get_game(game_id: int, session: Session = Depends(get_session)):
 
 
 @router.get("/{game_id}/reviews", response_model=List[Review])
-def list_game_reviews(game_id: int, skip: int = 0, limit: int = 50, session: Session = Depends(get_session)):
+def list_game_reviews(game_id: int, skip: int = Query(0, description="Offset for pagination"), limit: int = Query(50, description="Maximum reviews to return"), session: Session = Depends(get_session)):
     statement = select(Review).where(Review.game_id == game_id).offset(skip).limit(limit)
     results = session.exec(statement).all()
     return results
