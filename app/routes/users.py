@@ -16,12 +16,6 @@ class UserUpdate(BaseModel):
     bio: Optional[str]
 
 
-@router.get("/{user_id}")
-def get_user(user_id: int, session: Session = Depends(get_session)):
-    user = session.get(User, user_id)
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    return {"id": user.id, "username": user.username, "email": user.email, "role": user.role, "created_at": user.created_at}
 
 
 @router.get("/me")
@@ -38,3 +32,11 @@ def update_me(payload: UserUpdate, current_user: User = Depends(get_current_user
     session.commit()
     session.refresh(current_user)
     return {"id": current_user.id, "username": current_user.username, "email": current_user.email, "role": current_user.role}
+
+
+@router.get("/{user_id}")
+def get_user(user_id: int, session: Session = Depends(get_session)):
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    return {"id": user.id, "username": user.username, "email": user.email, "role": user.role, "created_at": user.created_at}

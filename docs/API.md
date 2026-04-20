@@ -59,6 +59,22 @@ POST /auth/login
   "token_type": "bearer"
 }
 ```
+ 
+Query examples
+
+- Search + filters:
+
+```bash
+curl "http://127.0.0.1:8000/games?q=space+adventure&genre=Indie&platform=windows&min_rating=4&sort=avg_rating:desc&limit=10"
+```
+
+- Use `is_released=true` to restrict to released titles, or `is_released=false` for upcoming titles.
+
+- `sort` supports `field` or `field:desc` for descending order (e.g. `release_date:desc`).
+
+Notes
+
+- When filtering by `min_rating`, the endpoint uses aggregated average ratings across reviews. If no ratings exist the game may be excluded depending on the query semantics.
 
 POST /auth/refresh (optional)
 - Description: Refresh access token using a refresh token (if implemented).
@@ -83,6 +99,8 @@ GET /users/{user_id}
 
 GET /users/me
 - Description: Get the current authenticated user's full profile (auth required)
+
+- Note: This endpoint requires a valid `Authorization: Bearer <access_token>` header. The `/users/me` route is intentionally ordered before `GET /users/{user_id}` to avoid path conflicts.
 
 PATCH /users/me
 - Description: Update current user (auth required)
@@ -300,6 +318,17 @@ Example error responses
 ```
 
 ------------------------------
+-
+## Seed script
+- Description: Import initial game data and optional sample users/favorites/reviews from a CSV file. The repository includes `scripts/seed.py` which by default reads `data/steam_games.csv`.
+
+Usage (local):
+
+```bash
+python scripts/seed.py --file data/steam_games.csv --limit 200 --skip-existing
+```
+
+- The script creates hashed passwords for sample users, skips duplicates by default when `--skip-existing` is provided, and prints a short summary after import.
 
 Convert to PDF
 - We recommend using `pandoc` or printing to PDF from an editor (VS Code).
